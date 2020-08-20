@@ -1,0 +1,160 @@
+---
+title: "Supervised learning - Linear Regression - Task 2"
+author: "Pallabi Mandal"
+date: "10/08/2020"
+output:
+  word_document:
+   toc: true
+   toc_depth: 2
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=T, warning=F, message=F)
+```
+
+```{r}
+library(ggplot2)
+library(coefplot)
+library(corrplot)
+library(psych)
+library(tidyverse)
+library(MASS)
+library(lattice)
+library(DataExplorer)
+library(ModelMetrics)
+library(lmtest)
+library(caret)
+library(recipes)
+library(caTools)
+library(Hmisc)
+library(GGally)
+
+
+```
+```{r}
+#Import data
+
+setwd("P:/R file")
+getwd()
+library(readr)
+Score_data <- read.csv("Student_score.csv")
+view(Score_data)
+str(Score_data)
+summary(Score_data)
+dim(Score_data)
+names(Score_data)
+attach(Score_data)
+
+
+```
+```{r}
+#EDA 
+#Univariate and Bivariate analysis
+boxplot(Hours, col = "lightgreen")
+boxplot(Scores, col = "turquoise")
+
+ggplot(Score_data, aes(x= Hours)) + geom_histogram(bins = 30, fill = "lightblue",col = "blue")
+ggplot(Score_data, aes(x = Scores)) + geom_histogram(bins = 30, fill = "darkgreen", col = "lightgreen")
+
+ggplot(Score_data, aes(Hours, colour = Scores)) +
+  geom_freqpoly(binwidth = 1) + labs(title="Score Distribution by Hours")
+
+scatter.smooth(x=Score_data$Hours, y=Score_data$Scores, main="Scores ~ Hours") 
+```
+```{r}
+#Correlation
+Score.cor = cor(Score_data)
+Score.cor = cor(Score_data, method = c("pearson"))
+library(Hmisc)
+Score.rcorr = rcorr(as.matrix(Score_data))
+Score.rcorr
+
+corrplot(Score.cor, type="lower", diag = FALSE)
+
+ggpairs(data=Score_data, columns=1:2, title="Hours data")
+
+
+cor(Score_data$Hours, Score_data$Scores)
+
+```
+```{r}
+#Data splicing
+split <- sample.split(Score_data$Scores, SplitRatio = 0.70)
+length(split)
+train<-subset(Score_data, split == TRUE)
+test<-subset(Score_data, split == FALSE)
+
+```
+
+```{r}
+#Model building
+set.seed(123)
+Mod1 <- lm(Scores ~ ., data = train)
+summary(Mod1)
+
+
+```
+```{r}
+#Model plots 
+with(train,plot(Scores, Hours))
+	abline(0, 1)
+
+#Fitted line
+ggplot(data = Score_data, aes(x = Hours, y = Scores)) +
+geom_point() +
+stat_smooth(method = "lm", col = "dodgerblue3") +
+theme(panel.background = element_rect(fill = "white"),
+axis.line.x=element_line(),
+axis.line.y=element_line()) +
+ggtitle("Linear Model Fitted to Data")
+```
+```{r}
+#K fold validation
+set.seed(123)
+train.control <- trainControl(method = "cv", number = 10)
+#Train the model
+model <- train(Scores~., data = train, method = "lm", trControl = train.control)
+print(model)
+
+```
+```{r}
+#Predict MSE
+yhat = predict(Mod1,newdata= test) 
+lm.test=test$Scores # These are the actual values
+lm.test # Take a quick look
+plot(yhat,lm.test) # Let's plot predicted vs. actual
+abline(0,1) # And draw a line
+mean((yhat-lm.test)^2) # And calculate the MSE
+
+
+
+```
+
+
+```{r}
+#plot visualization for Test data predictions of Hours with respect to percentage of score
+ggplot() +
+  geom_point(aes(x = test$Hours, y = test$Scores),
+             colour = 'blue') +
+  geom_line(aes(x = train$Hours, y = predict(Mod1, newdata = train)),
+            colour = 'black') +
+  ggtitle('Scores vs Hours (Test)') +
+  xlab('Hours Studied') +
+  ylab('Percentage of Score')
+
+
+```
+```{r}
+#Make prediction for 9.25 hours
+new_data <- data.frame("Hours"=9.25,"Scores"=0)
+score_predict <- predict(Mod1,newdata = new_data)
+new_data <- data.frame("Hours"=9.25,"Scores"= score_predict)
+print(new_data)
+
+```
+```{r}
+#Calculate RMSE, MAE score on Test data
+predictions <- predict(Mod1, test)
+postResample(test$Scores, predictions)
+
+```
