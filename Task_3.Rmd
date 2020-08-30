@@ -1,0 +1,68 @@
+---
+title: "Unsupervised Learning - Clustering"
+author: "Pallabi Mandal"
+date: "29/08/2020"
+output: 
+word_document:
+   toc: true
+   toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
+```
+
+```{r}
+#Import libraries
+
+library(cluster)
+
+setwd("P:/R file")
+getwd()
+
+#Import dataset
+
+Iris_data <- read.csv("Iris.csv")
+
+```
+```{r}
+#Using the elbow method to find optimal number of clusters
+
+set.seed(6)
+wcss = vector()
+for (i in 1:10) wcss[i] = sum(kmeans(Iris_data[,2:5], i)$withinss)
+
+
+```
+```{r}
+#plotting the wcss to get the optimum number of clusters
+plot(1:10,
+     wcss,
+     type = 'b',
+     main = paste('The Elbow Method'),
+     xlab = 'Number of clusters',
+     ylab = 'WCSS')
+
+```
+```{r}
+#Fitting K-Means
+
+set.seed(123)
+kmeans = kmeans(x = Iris_data[,2:5], centers = 3)
+y_kmeans = kmeans$cluster
+
+```
+```{r}
+#Visualising clusters
+
+clusplot(Iris_data,
+         y_kmeans,
+         lines = 0,
+         shade = T,
+         color = TRUE,
+         labels = 1,
+         plotchar = T,
+         span = TRUE,
+         main = paste('Clusters'))
+
+```
